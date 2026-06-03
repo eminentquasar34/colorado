@@ -3,6 +3,90 @@
 This project explores whether language models can generate plot-grounded film
 reviews in a Roger Ebert-like critical style for films he did not review.
 
+## Project Status
+
+Completed so far:
+
+- Scraped and pushed the main review datasets:
+  - `data/processed/ebert_reviews_full.csv`: 8,017 Roger Ebert reviews.
+  - `data/raw/non_ebert_reviews/non_ebert_reviews.csv`: 8,330 non-Ebert reviews.
+- Added fixed modeling splits so the generator and style classifier train on
+  disjoint Ebert reviews.
+- Matched Ebert-reviewed movies to Kaggle Wikipedia movie plots and built
+  generator-ready JSONL files.
+- Trained baseline evaluators:
+  - Ebert style classifier: TF-IDF + logistic regression over review text.
+  - Improved plot relevance classifier: TF-IDF + overlap features with hard
+    negatives and ranking metrics.
+- Added generator training/inference scripts for FLAN-T5.
+- Ran a small CPU pilot fine-tune with `google/flan-t5-small`.
+- Added local zero-shot/few-shot FLAN-T5 baselines.
+- Added GPT zero-shot/few-shot baseline script using the OpenAI API.
+- Added generated-review evaluation metrics: style score, plot relevance score,
+  plot copy-rate, BERTScore, and length.
+
+Current key baseline results:
+
+```text
+Style classifier:
+Accuracy: 0.992
+F1:       0.992
+ROC-AUC:  1.000
+
+Improved plot relevance classifier:
+Accuracy:       0.939
+F1:             0.880
+ROC-AUC:        0.978
+Top-1 ranking:  0.962
+MRR:            0.979
+Recall@3:       0.996
+```
+
+Current 25-example generation comparison:
+
+```text
+Model                         Style   Plot    Copy↓   BERTScore F1
+zero_shot_flan_t5_small       0.606   0.840   0.435   0.676
+few_shot_flan_t5_small_3shot  0.613   0.553   0.000   0.663
+finetuned_flan_t5_pilot       0.639   0.992   0.625   0.737
+```
+
+Important caveat: the fine-tuned pilot has high plot relevance but also high
+plot-copy rate, so plot score should always be reported alongside copy-rate.
+
+## Next Steps
+
+Recommended next steps for the poster:
+
+1. Train the full FLAN-T5 model on GPU using all `3,202` plot-matched Ebert
+   generator examples.
+2. Run the full model on `data/modeling/generator_test.jsonl` and evaluate with
+   style, plot relevance, copy-rate, BERTScore, and length.
+3. Run GPT baselines:
+   - zero-shot `gpt-4.1-mini`
+   - few-shot `gpt-4.1-mini` with similar examples
+4. Build a never-reviewed movie plot set from the Kaggle plot CSV by filtering
+   out movies already reviewed by Ebert.
+5. Generate reviews for never-reviewed movies using GPT and the fine-tuned
+   FLAN-T5 model.
+6. Evaluate never-reviewed movie outputs with style score, plot relevance score,
+   copy-rate, length, and human ratings. Do not use BERTScore there because no
+   real Ebert reference review exists.
+7. Create poster figures:
+   - dataset split chart
+   - Wikipedia plot match-rate chart
+   - model comparison table
+   - style vs plot relevance scatterplot
+   - copy-rate comparison
+   - example generated review panel
+
+Note: `data/wiki_movie_plots_deduped.csv` is required for plot matching but is
+not tracked in git because it is a large Kaggle data file. In Colab, place it at:
+
+```text
+data/wiki_movie_plots_deduped.csv
+```
+
 ## Start With The Ebert Scrape
 
 RogerEbert.com's Terms of Use say that site content may not be scraped or copied
