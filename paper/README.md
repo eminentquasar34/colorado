@@ -18,6 +18,15 @@ python3 scripts/latex_outline.py paper/main.tex
 This expands the `\input{...}` section files and prints sections, subsections,
 labels, captions, and rough word counts.
 
+## Target Format
+
+The final class report should be 5-6 pages long, excluding references. The
+course allows using an IEEE/CVPR-style conference paper template, but the report
+requirement is approximately 12pt font with line spacing between 1 and 1.5.
+If the CVPR template is too compressed in Overleaf, adjust the template settings
+or export a class-report version with larger text/spacing while keeping the same
+section structure.
+
 ## Compile The Paper
 
 This file currently uses the CVPR author kit:
