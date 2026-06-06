@@ -1,6 +1,11 @@
 # Paper Workflow
 
-The report source lives in `paper/main.tex`.
+The report source is split across a CVPR-style wrapper and section files:
+
+- `paper/main.tex`: CVPR document setup, title/authors, section inputs, bibliography.
+- `paper/preamble.tex`: extra packages loaded before `hyperref`.
+- `paper/sec/*.tex`: editable paper sections.
+- `paper/main.bib`: BibTeX references.
 
 ## View The Structure
 
@@ -10,7 +15,8 @@ You can inspect the paper outline without opening Overleaf or compiling:
 python3 scripts/latex_outline.py paper/main.tex
 ```
 
-This prints sections, subsections, labels, captions, and rough word counts.
+This expands the `\input{...}` section files and prints sections, subsections,
+labels, captions, and rough word counts.
 
 ## Compile The Paper
 

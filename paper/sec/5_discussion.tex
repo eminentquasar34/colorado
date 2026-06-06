@@ -1,0 +1,27 @@
+\section{Discussion}
+
+\subsection{Key Findings}
+
+The primary finding of this project is that fine-tuning substantially improves both stylistic imitation and plot grounding. Compared to prompting-based approaches, the fine-tuned FLAN-T5 model generated reviews that were more similar to Roger Ebert's writing and more closely aligned with the target movie plots.
+
+However, these improvements came with an important tradeoff. The fine-tuned model frequently copied phrases and descriptions directly from the Wikipedia plot summaries. As a result, high plot relevance scores do not necessarily imply high-quality criticism. A model can be relevant to the movie while still failing to produce original critical prose.
+
+This observation highlights the importance of evaluating generated text using multiple metrics. If we had only measured plot relevance, the fine-tuned model would appear almost completely successful. However, the copy rate reveals that part of this success comes from extractive behavior. Similarly, if we had only measured style, we would not know whether the model was actually discussing the correct film.
+
+Another important lesson is that evaluation models depend heavily on the quality of their negative examples. The plot relevance classifier became more meaningful after we added harder negatives from similar genres and decades. Random wrong plots were too easy, while harder negatives forced the classifier to learn more realistic distinctions.
+
+\subsection{Limitations}
+
+Several limitations should be acknowledged. First, our evaluation relies heavily on automated metrics, which may not fully capture qualities such as insight, creativity, humor, or critical judgment. A review may receive a high style score while still lacking the depth or originality of a real Ebert review. Future work should include human evaluation, asking readers to rate generated reviews on style, relevance, originality, and overall quality.
+
+Second, BERTScore can only be computed for movies that Ebert actually reviewed. This limits its usefulness for the broader goal of generating reviews for movies Ebert never saw. For new movies, there is no reference Ebert review, so evaluation must rely on classifiers, human judgment, or other reference-free metrics.
+
+Third, the relatively small size of FLAN-T5-small likely constrained generation quality. Larger models may be better at preserving plot relevance while generating more original and stylistically convincing prose. They may also benefit more from few-shot prompting, which performed poorly in our experiments.
+
+Fourth, our model uses Wikipedia plot summaries as the main source of grounding information. These summaries are useful because they are structured and widely available, but they do not capture all aspects of a movie that a critic might care about, such as acting quality, cinematography, pacing, dialogue, or emotional impact. As a result, the model may lack important information that would shape a real review.
+
+\subsection{Ethical Considerations}
+
+This project also raises ethical questions around posthumous style imitation. Roger Ebert is no longer alive and cannot consent to new writing being generated in his voice. For this reason, generated outputs should be clearly labeled as Ebert-inspired rather than presented as authentic Ebert reviews.
+
+More broadly, author-style imitation can be misleading if readers believe generated text was actually written by the original person. This is especially important for influential critics, public intellectuals, or experts whose opinions carry cultural or professional weight. While our project is intended as a research exploration, any real deployment of this type of system would need clear disclosure and careful consideration of consent, attribution, and misuse.

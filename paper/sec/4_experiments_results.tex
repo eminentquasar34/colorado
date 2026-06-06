@@ -1,0 +1,89 @@
+\section{Experiments and Results}
+
+\subsection{Evaluation Model Performance}
+
+Before evaluating generated reviews, we first measured the performance of the automatic evaluation models.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l c c c}
+\hline
+\textbf{Evaluator} & \textbf{Accuracy} & \textbf{F1} & \textbf{ROC-AUC} \\
+\hline
+Style Classifier & 0.992 & 0.992 & 1.000 \\
+Plot Relevance Classifier & 0.939 & 0.880 & 0.978 \\
+\hline
+\end{tabular}
+\caption{Performance of automatic evaluation models.}
+\label{tab:evaluators}
+\end{table}
+
+The style classifier achieved near-perfect performance, indicating that Roger Ebert's writing contains strong and identifiable textual patterns. This suggests that Ebert's style is distinguishable from reviews written by other critics. However, this result should be interpreted carefully. The classifier may learn not only deeper stylistic traits, but also era-specific language, publication-specific conventions, or vocabulary patterns associated with Ebert's review archive.
+
+The plot relevance classifier also performed well, achieving 0.939 accuracy and 0.978 ROC-AUC. The high ROC-AUC indicates that the classifier is especially effective at ranking correct plot-review pairs above incorrect pairs. This is useful for our evaluation setting because we care not only about binary classification, but also whether generated reviews are more aligned with the correct movie than with plausible alternatives.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l c}
+\hline
+\textbf{Ranking Metric} & \textbf{Score} \\
+\hline
+Top-1 Ranking Accuracy & 0.962 \\
+Mean Reciprocal Rank & 0.979 \\
+Recall@3 & 0.996 \\
+\hline
+\end{tabular}
+\caption{Ranking performance of the plot relevance classifier.}
+\label{tab:ranking}
+\end{table}
+
+The ranking metrics further show that when the classifier was given one correct plot and several incorrect plots for a review, it ranked the correct plot first 96.2\% of the time. This suggests that the classifier can meaningfully identify plot-review alignment, especially after the addition of harder negative examples.
+
+\subsection{Generation Results}
+
+The results for the three generation approaches are shown in Table~\ref{tab:generation}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l c c c c}
+\hline
+\textbf{Model} & \textbf{Style} & \textbf{Plot} & \textbf{Copy} & \textbf{BERT} \\
+\hline
+Zero-Shot & 0.606 & 0.840 & 0.435 & 0.676 \\
+Few-Shot & 0.613 & 0.553 & 0.000 & 0.663 \\
+Fine-Tuned & 0.639 & 0.992 & 0.625 & 0.737 \\
+\hline
+\end{tabular}
+\caption{Generation results on held-out Ebert test examples. Higher is better for Style, Plot, and BERTScore. Lower is better for Copy Rate.}
+\label{tab:generation}
+\end{table}
+
+The fine-tuned FLAN-T5 model achieved the strongest overall performance across nearly all evaluation metrics. It obtained the highest style score, highest plot relevance score, and highest BERTScore. These improvements suggest that supervised fine-tuning on Ebert review and plot pairs allowed the model to learn patterns that were not captured through prompting alone.
+
+The zero-shot model performed reasonably well despite receiving no task-specific training. Its plot relevance score of 0.840 suggests that instruction-tuned language models already possess some ability to generate review-like text from plot descriptions. However, its style score and BERTScore were lower than those of the fine-tuned model, indicating that prompting alone was not sufficient to fully capture Ebert's review style.
+
+Unexpectedly, the few-shot baseline underperformed both the zero-shot and fine-tuned models on plot relevance and BERTScore. While it achieved a slightly higher style score than the zero-shot model, its plot relevance score dropped substantially. Qualitative inspection suggested that the model sometimes produced generic review-like text or became overly influenced by the few-shot examples instead of focusing on the target movie.
+
+\subsection{Analysis}
+
+The most important result is the relationship between plot relevance and copying behavior. Although the fine-tuned model achieved the highest plot relevance score, it also had the highest copy rate. The fine-tuned model copied 62.5\% of its four-word phrases from the Wikipedia plot summaries, compared to 43.5\% for the zero-shot baseline and 0.0\% for the few-shot baseline.
+
+This suggests that the fine-tuned model partially achieved stronger grounding by directly reusing source material rather than generating fully original critical analysis. In other words, the model learned to stay close to the plot, but sometimes too close. It behaved more like a plot summarizer than a critic in some cases.
+
+The BERTScore result is still encouraging. The fine-tuned model achieved a BERTScore F1 of 0.737, outperforming both the zero-shot and few-shot baselines. This indicates that the generated reviews were more semantically similar to held-out real Ebert reviews. However, BERTScore alone cannot determine whether the review is insightful, original, or stylistically faithful. It only measures semantic similarity to a reference review.
+
+The few-shot model's performance also highlights a practical limitation of small instruction-tuned models. Few-shot prompting is often useful for larger language models, but FLAN-T5-small may not have enough capacity or context length to effectively use multiple examples while also processing a full plot summary. This may explain why the few-shot model produced lower plot relevance despite being given more stylistic examples.
+
+\begin{figure}[h]
+\centering
+\fbox{\rule{0pt}{1.5in}\rule{0.9\linewidth}{0pt}}
+\caption{Style score by model. The fine-tuned FLAN-T5 model achieved the highest style score, suggesting that supervised training improved stylistic similarity to Roger Ebert. Replace this placeholder with your actual chart.}
+\label{fig:style}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\fbox{\rule{0pt}{1.5in}\rule{0.9\linewidth}{0pt}}
+\caption{Plot relevance and copy rate by model. The fine-tuned model achieved the highest plot relevance but also the highest copy rate, revealing a tradeoff between grounding and originality. Replace this placeholder with your actual chart.}
+\label{fig:plotcopy}
+\end{figure}

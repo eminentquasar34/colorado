@@ -11,6 +11,7 @@ from pathlib import Path
 HEADING_RE = re.compile(r"\\(section|subsection|subsubsection)\*?\{([^{}]+)\}")
 CAPTION_RE = re.compile(r"\\caption\{([^{}]+)\}")
 LABEL_RE = re.compile(r"\\label\{([^{}]+)\}")
+INPUT_RE = re.compile(r"\\(?:input|include)\{([^{}]+)\}")
 COMMAND_RE = re.compile(r"\\[a-zA-Z]+\*?(?:\[[^\]]*\])?(?:\{[^{}]*\})?")
 ENV_RE = re.compile(r"\\(?:begin|end)\{[^{}]+\}")
 
@@ -19,6 +20,33 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Print a LaTeX document outline.")
     parser.add_argument("tex_file", type=Path)
     return parser.parse_args()
+
+
+def resolve_input(current_file: Path, input_name: str) -> Path:
+    input_path = Path(input_name)
+    if input_path.suffix == "":
+        input_path = input_path.with_suffix(".tex")
+    if not input_path.is_absolute():
+        input_path = current_file.parent / input_path
+    return input_path
+
+
+def read_with_inputs(tex_file: Path, seen: set[Path] | None = None) -> str:
+    tex_file = tex_file.resolve()
+    seen = set() if seen is None else seen
+    if tex_file in seen:
+        return ""
+    seen.add(tex_file)
+
+    text = tex_file.read_text(encoding="utf-8")
+
+    def replace_input(match: re.Match[str]) -> str:
+        child = resolve_input(tex_file, match.group(1)).resolve()
+        if not child.exists():
+            return f"% Missing input skipped by latex_outline.py: {child}\n"
+        return read_with_inputs(child, seen)
+
+    return INPUT_RE.sub(replace_input, text)
 
 
 def strip_latex(text: str) -> str:
@@ -44,7 +72,7 @@ def section_spans(text: str) -> list[tuple[str, str, int, int]]:
 
 def main() -> None:
     args = parse_args()
-    text = args.tex_file.read_text(encoding="utf-8")
+    text = read_with_inputs(args.tex_file)
     spans = section_spans(text)
     total_words = word_count(text)
 

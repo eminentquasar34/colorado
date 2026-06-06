@@ -1,0 +1,23 @@
+\section{Related Work}
+
+\subsection{Movie Rating Prediction}
+
+Several prior works have explored the use of machine learning techniques to analyze and predict movie ratings. The paper \textit{Rating Prediction via Generative Convolutional Neural Networks Based Regression} investigates how characteristics of a movie can be used to predict its eventual rating~\cite{ratingprediction}. Rather than relying on post-release information such as reviews or audience feedback, the authors focus on features that are available at the time of a movie's release. Their results demonstrate that meaningful predictive signals can be extracted from movie metadata and content-related attributes.
+
+This work is relevant to our project because it highlights the importance of input feature selection. Roger Ebert's reviews and ratings were often influenced by factors such as genre, plot structure, themes, performances, and production details. Since there is a large amount of available information about movies, choosing which information to provide to the model is an important design decision. Including too little information may prevent the model from understanding the movie, while including too much information may encourage copying or distract the model from the review-writing task.
+
+\subsection{Movie Recommendation Systems}
+
+The survey \textit{Movie Recommender Systems: Concepts, Methods, Challenges, and Future Directions} provides a comprehensive overview of traditional and modern movie recommendation approaches~\cite{recsurvey}. The paper discusses techniques including K-means clustering, principal component analysis, self-organizing maps, and hybrid recommendation systems, while also examining the challenges associated with personalized recommendation.
+
+Although our project is not a traditional recommender system, there are strong conceptual similarities. Our goal is effectively to predict how Roger Ebert would respond to a movie that he never reviewed. In this sense, we can view our model as a personalized recommendation system that predicts the preferences and opinions of a specific user. However, instead of only predicting a rating or recommendation score, our model attempts to generate a full written review in the user's style.
+
+The paper \textit{Movie Recommender Systems: Implementation and Performance Evaluation} compares several recommendation approaches, including user-user collaborative filtering, item-item collaborative filtering, content-based recommendation, singular value decomposition, and neural network models~\cite{recperformance}. Our research question shares similarities with this work because both settings involve predicting preferences over movies from historical data. Rather than recommending movies to a general user, we seek to model the opinions of a specific critic.
+
+\subsection{Language Models for Text Generation}
+
+Our project also builds on text-to-text language modeling. T5 frames natural language processing tasks as text-to-text generation problems, which fits our setup of mapping movie information and plot summaries to generated reviews~\cite{t5}. In our case, the input is a structured prompt containing the movie title, release year, rating, and plot summary, while the output is a generated review.
+
+FLAN-T5 extends this idea through instruction tuning, making it a strong baseline for zero-shot and few-shot generation~\cite{flan}. Because FLAN-T5 is designed to follow natural language instructions, it can be prompted to write a review even before task-specific fine-tuning. This allows us to compare the effectiveness of prompting alone against supervised fine-tuning on Ebert-specific review data.
+
+For evaluation, we use BERTScore, which compares generated and reference text using contextual embeddings rather than exact word overlap~\cite{bertscore}. This is important for review generation because there are many valid ways to discuss the same film. A generated review may be semantically similar to a real Ebert review even if it does not use the same words.

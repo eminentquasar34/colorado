@@ -1,0 +1,34 @@
+\section{Introduction}
+
+\subsection{Motivation}
+
+Large language models have demonstrated strong capabilities in text generation, summarization, question answering, and stylistic imitation. However, generating text that both captures an individual's writing style and remains grounded in specific source material remains a challenging problem. It is relatively easy for a model to produce fluent text that sounds like a movie review, but it is harder for the model to write in a particular critic's voice while still discussing the correct film in a meaningful way.
+
+In this project, we investigate whether language models can generate stylistically convincing movie reviews in the voice of Roger Ebert while remaining faithful to the plot of a target film. This requires solving two related but distinct problems. First, the model must capture elements of Ebert's style, including his tone, phrasing, humor, and critical perspective. Second, the model must remain grounded in the actual plot and content of the movie rather than producing generic review language.
+
+\subsection{Roger Ebert as a Case Study}
+
+Roger Ebert serves as an ideal case study because of his extensive body of work and highly recognizable writing style. Across more than 8,000 published reviews, Ebert developed a distinctive critical voice characterized by accessible prose, humor, moral reflection, and an emphasis on the audience's emotional experience. His writing often moved beyond simple plot summary or rating prediction; he frequently connected individual films to broader ideas about character, emotion, society, and human behavior.
+
+This makes Ebert-style generation more interesting than simply predicting whether a movie is good or bad. A successful model should not only assign an appropriate opinion to a film, but should also communicate that opinion in a way that resembles Ebert's prose. Rather than simply evaluating whether a model can produce fluent review-like text, we ask whether it can approximate the style and judgment patterns of a specific critic.
+
+\subsection{Research Question and Contributions}
+
+Our central research question is:
+
+\begin{quote}
+Can a language model generate movie reviews that imitate Roger Ebert's writing style while remaining grounded in the plot of a specific film?
+\end{quote}
+
+To evaluate this task, we compare zero-shot prompting, few-shot prompting, and a fine-tuned FLAN-T5 model trained on Roger Ebert reviews paired with movie plot summaries. We assess generated reviews using both stylistic similarity and plot relevance metrics to determine whether the generated text resembles Ebert's writing while remaining grounded in the target film.
+
+This problem also extends beyond film criticism. If language models can successfully learn and reproduce the perspectives of influential individuals, similar techniques could potentially be applied to domains such as business analysis, sports commentary, or other forms of expert opinion generation. Understanding the strengths and limitations of stylistic imitation therefore has implications for a wide range of generative AI applications.
+
+Our main contributions are:
+
+\begin{itemize}
+    \item We construct a dataset of Roger Ebert reviews paired with Wikipedia movie plot summaries.
+    \item We train automatic evaluators for stylistic similarity and plot relevance.
+    \item We compare zero-shot, few-shot, and fine-tuned FLAN-T5 generation models.
+    \item We analyze the tradeoff between plot grounding and copying behavior.
+\end{itemize}

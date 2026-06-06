@@ -1,0 +1,7 @@
+\section{Conclusion}
+
+This project explored whether language models can generate Roger Ebert-style movie reviews while remaining grounded in the plots of specific films. Using a dataset of Ebert reviews paired with Wikipedia plot summaries, we compared zero-shot prompting, few-shot prompting, and fine-tuning approaches.
+
+The fine-tuned FLAN-T5 model achieved the strongest overall results, outperforming prompting-based baselines on stylistic similarity, plot relevance, and semantic similarity. However, these gains were accompanied by increased copying from source plots, demonstrating a tradeoff between grounding and originality.
+
+Overall, our results suggest that aspects of an individual critic's writing style can be learned through supervised fine-tuning, but generating original and insightful criticism remains significantly more challenging than reproducing surface-level stylistic patterns. Future work should incorporate human evaluation, larger language models, richer movie features, and techniques designed to reduce extractive behavior while preserving plot relevance.

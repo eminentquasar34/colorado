@@ -2,18 +2,33 @@
 
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
-\usepackage[review]{cvpr}
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+% \usepackage{cvpr}              % To produce the CAMERA-READY version
+\usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+
+% Import additional packages in the preamble file, before hyperref
 \input{preamble}
 
+% It is strongly recommended to use hyperref, especially for the review version.
+% hyperref with option pagebackref eases the reviewers' job.
+% Please disable hyperref *only* if you encounter grave issues,
+% e.g. with the file validation for the camera-ready version.
+%
+% If you comment hyperref and then uncomment it, you should delete *.aux before re-running LaTeX.
+% (Or just hit 'q' on the first LaTeX run, let it finish, and you should be clear).
 \definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
 \usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
 
-\def\paperID{*****}
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
 \def\confName{CVPR}
 \def\confYear{2026}
 
+%%%%%%%%% TITLE - PLEASE UPDATE
 \title{Generating Roger Ebert-Style Movie Reviews with Language Models}
 
+%%%%%%%%% AUTHORS - PLEASE UPDATE
 \author{
 Lawrence Wang\\
 University of Washington\\
@@ -30,331 +45,20 @@ University of Washington\\
 
 \begin{document}
 \maketitle
-
-\begin{abstract}
-This project investigates whether language models can generate movie reviews that imitate Roger Ebert's writing style while remaining grounded in the plot of a target film. We compare zero-shot prompting, few-shot prompting, and a fine-tuned FLAN-T5 model trained on Roger Ebert reviews paired with Wikipedia movie plot summaries. To evaluate generated reviews, we use automatic metrics for stylistic similarity, plot relevance, semantic similarity, and source copying. Our results show that fine-tuning improves style imitation, plot grounding, and BERTScore compared to prompting-based baselines. However, the fine-tuned model also copies more heavily from plot summaries, suggesting a tradeoff between grounding and originality. Overall, our findings show that individual critical style is partially learnable, but generating original and insightful criticism remains more difficult than reproducing surface-level stylistic patterns.
-\end{abstract}
-
-\section{Introduction}
-
-\subsection{Motivation}
-
-Large language models have demonstrated strong capabilities in text generation, summarization, question answering, and stylistic imitation. However, generating text that both captures an individual's writing style and remains grounded in specific source material remains a challenging problem. It is relatively easy for a model to produce fluent text that sounds like a movie review, but it is harder for the model to write in a particular critic's voice while still discussing the correct film in a meaningful way.
-
-In this project, we investigate whether language models can generate stylistically convincing movie reviews in the voice of Roger Ebert while remaining faithful to the plot of a target film. This requires solving two related but distinct problems. First, the model must capture elements of Ebert's style, including his tone, phrasing, humor, and critical perspective. Second, the model must remain grounded in the actual plot and content of the movie rather than producing generic review language.
-
-\subsection{Roger Ebert as a Case Study}
-
-Roger Ebert serves as an ideal case study because of his extensive body of work and highly recognizable writing style. Across more than 8,000 published reviews, Ebert developed a distinctive critical voice characterized by accessible prose, humor, moral reflection, and an emphasis on the audience's emotional experience. His writing often moved beyond simple plot summary or rating prediction; he frequently connected individual films to broader ideas about character, emotion, society, and human behavior.
-
-This makes Ebert-style generation more interesting than simply predicting whether a movie is good or bad. A successful model should not only assign an appropriate opinion to a film, but should also communicate that opinion in a way that resembles Ebert's prose. Rather than simply evaluating whether a model can produce fluent review-like text, we ask whether it can approximate the style and judgment patterns of a specific critic.
-
-\subsection{Research Question and Contributions}
-
-Our central research question is:
-
-\begin{quote}
-Can a language model generate movie reviews that imitate Roger Ebert's writing style while remaining grounded in the plot of a specific film?
-\end{quote}
-
-To evaluate this task, we compare zero-shot prompting, few-shot prompting, and a fine-tuned FLAN-T5 model trained on Roger Ebert reviews paired with movie plot summaries. We assess generated reviews using both stylistic similarity and plot relevance metrics to determine whether the generated text resembles Ebert's writing while remaining grounded in the target film.
-
-This problem also extends beyond film criticism. If language models can successfully learn and reproduce the perspectives of influential individuals, similar techniques could potentially be applied to domains such as business analysis, sports commentary, or other forms of expert opinion generation. Understanding the strengths and limitations of stylistic imitation therefore has implications for a wide range of generative AI applications.
-
-Our main contributions are:
-
-\begin{itemize}
-    \item We construct a dataset of Roger Ebert reviews paired with Wikipedia movie plot summaries.
-    \item We train automatic evaluators for stylistic similarity and plot relevance.
-    \item We compare zero-shot, few-shot, and fine-tuned FLAN-T5 generation models.
-    \item We analyze the tradeoff between plot grounding and copying behavior.
-\end{itemize}
-
-\section{Related Work}
-
-\subsection{Movie Rating Prediction}
-
-Several prior works have explored the use of machine learning techniques to analyze and predict movie ratings. The paper \textit{Rating Prediction via Generative Convolutional Neural Networks Based Regression} investigates how characteristics of a movie can be used to predict its eventual rating. Rather than relying on post-release information such as reviews or audience feedback, the authors focus on features that are available at the time of a movie's release. Their results demonstrate that meaningful predictive signals can be extracted from movie metadata and content-related attributes.
-
-This work is relevant to our project because it highlights the importance of input feature selection. Roger Ebert's reviews and ratings were often influenced by factors such as genre, plot structure, themes, performances, and production details. Since there is a large amount of available information about movies, choosing which information to provide to the model is an important design decision. Including too little information may prevent the model from understanding the movie, while including too much information may encourage copying or distract the model from the review-writing task.
-
-\subsection{Movie Recommendation Systems}
-
-The survey \textit{Movie Recommender Systems: Concepts, Methods, Challenges, and Future Directions} provides a comprehensive overview of traditional and modern movie recommendation approaches. The paper discusses techniques including K-means clustering, principal component analysis, self-organizing maps, and hybrid recommendation systems, while also examining the challenges associated with personalized recommendation.
-
-Although our project is not a traditional recommender system, there are strong conceptual similarities. Our goal is effectively to predict how Roger Ebert would respond to a movie that he never reviewed. In this sense, we can view our model as a personalized recommendation system that predicts the preferences and opinions of a specific user. However, instead of only predicting a rating or recommendation score, our model attempts to generate a full written review in the user's style.
-
-The paper \textit{Movie Recommender Systems: Implementation and Performance Evaluation} compares several recommendation approaches, including user-user collaborative filtering, item-item collaborative filtering, content-based recommendation, singular value decomposition, and neural network models. Our research question shares similarities with this work because both settings involve predicting preferences over movies from historical data. Rather than recommending movies to a general user, we seek to model the opinions of a specific critic.
-
-\subsection{Language Models for Text Generation}
-
-Our project also builds on text-to-text language modeling. T5 frames natural language processing tasks as text-to-text generation problems, which fits our setup of mapping movie information and plot summaries to generated reviews. In our case, the input is a structured prompt containing the movie title, release year, rating, and plot summary, while the output is a generated review.
-
-FLAN-T5 extends this idea through instruction tuning, making it a strong baseline for zero-shot and few-shot generation. Because FLAN-T5 is designed to follow natural language instructions, it can be prompted to write a review even before task-specific fine-tuning. This allows us to compare the effectiveness of prompting alone against supervised fine-tuning on Ebert-specific review data.
-
-For evaluation, we use BERTScore, which compares generated and reference text using contextual embeddings rather than exact word overlap. This is important for review generation because there are many valid ways to discuss the same film. A generated review may be semantically similar to a real Ebert review even if it does not use the same words.
-
-\section{Methods}
-
-\subsection{Dataset Construction}
-
-We collected three primary datasets for this project: Roger Ebert reviews, non-Ebert movie reviews, and Wikipedia movie plot summaries. The Ebert review dataset contains 8,017 reviews scraped from RogerEbert.com. Each review includes metadata such as title, author, publication date, rating, URL, and full review text. These reviews serve as the target style for generation and as positive examples for the style classifier.
-
-We also collected 8,330 reviews written by other critics. These reviews are used as negative examples for the style classifier. Including non-Ebert reviews allows the classifier to learn what distinguishes Ebert's writing from general film criticism rather than simply learning to identify movie review text.
-
-Finally, we used the Kaggle Wikipedia Movie Plots dataset, which contains approximately 34,000 movie plot summaries along with metadata such as movie title, release year, genre, director, and Wikipedia URL. These plot summaries provide the grounding information used by the generation model. The goal is for the model to generate a review that sounds like Ebert while referring to the correct movie.
-
-\subsubsection{Plot Matching}
-
-To create paired examples for generation, we matched Roger Ebert reviews to Wikipedia plot summaries using normalized movie titles and release years. Movies without reliable plot matches were excluded from the generator training dataset. This filtering step was important because noisy or incorrect matches would train the model to associate reviews with the wrong plots, weakening both generation and evaluation.
-
-After matching, the final plot-matched generator dataset contained 3,202 training examples, 510 validation examples, and 526 test examples.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{l c}
-\hline
-\textbf{Split} & \textbf{Plot-Matched Examples} \\
-\hline
-Train & 3,202 \\
-Validation & 510 \\
-Test & 526 \\
-\hline
-\end{tabular}
-\caption{Final plot-matched dataset used for review generation.}
-\label{tab:data}
-\end{table}
-
-\subsubsection{Data Splits}
-
-To prevent data leakage between generation and evaluation models, we created fixed, non-overlapping splits. The generator training set was used only to fine-tune the language model. Separate Ebert reviews were reserved for the style classifier, validation, and final testing. This design ensures that the generator is evaluated on held-out movies and reviews that it did not train on.
-
-The held-out test set is especially important because it contains real Ebert reviews for movies that were not included in the generator's training data. This allows us to compare generated reviews against true Ebert reviews using BERTScore while still evaluating generalization to unseen examples.
-
-\subsection{Generation Models}
-
-We evaluated three approaches for generating movie reviews: zero-shot prompting, few-shot prompting, and supervised fine-tuning. All three approaches use FLAN-T5-small as the base model so that differences in performance are due to the training or prompting strategy rather than the underlying architecture.
-
-\subsubsection{Zero-Shot FLAN-T5}
-
-In the zero-shot setting, FLAN-T5-small was prompted with a movie title, release year, rating, and plot summary without any task-specific training. The prompt instructed the model to generate a Roger Ebert-style review. This baseline tests how well an instruction-tuned language model can perform the task using only its pretrained knowledge and the provided prompt.
-
-\subsubsection{Few-Shot FLAN-T5}
-
-In the few-shot setting, the prompt included several example Roger Ebert-style reviews before the target movie. These examples were selected from the training set and were intended to provide additional stylistic guidance. This baseline tests whether in-context examples help the model better imitate Ebert's tone and structure.
-
-Few-shot prompting is useful because it does not require gradient-based training. However, it also has limitations. FLAN-T5-small has limited context length and capacity, so adding examples may reduce the amount of space available for the target plot or may cause the model to imitate the examples too directly.
-
-\subsubsection{Fine-Tuned FLAN-T5}
-
-Our main model is a fine-tuned FLAN-T5-small encoder-decoder Transformer. Each training example is formatted as a text-to-text generation task. The input contains the movie title, year, Ebert rating, and Wikipedia plot summary. The target output is the real Roger Ebert review.
-
-The input format is:
-
-\begin{quote}
-Movie: [title] \\
-Year: [year] \\
-Roger Ebert rating: [rating] / 4 \\
-Wikipedia plot: [plot summary] \\
-Review:
-\end{quote}
-
-The target output is the corresponding Ebert review. The model is trained using teacher forcing and cross-entropy loss over the target review tokens. Through this training process, the model learns to map structured movie information and plot summaries to Ebert-style review text.
-
-\subsection{Evaluation Models}
-
-Because stylistic quality and plot relevance are difficult to measure directly, we trained two auxiliary evaluation models: a style classifier and a plot relevance classifier.
-
-\subsubsection{Style Classifier}
-
-The style classifier evaluates whether a review sounds like Roger Ebert. It uses TF-IDF unigram and bigram features with logistic regression. The input is only the review text, and the output is the probability that the review was written by Ebert.
-
-Positive examples are real Roger Ebert reviews, while negative examples are reviews by other critics. We intentionally avoid using metadata such as author name, URL, or publication date because generated reviews will not contain those fields. The classifier therefore learns from the textual content of the review itself.
-
-\subsubsection{Plot Relevance Classifier}
-
-The plot relevance classifier evaluates whether a review matches a given movie plot. The input is a pair consisting of a Wikipedia plot summary and a review. The output is the probability that the review corresponds to the plot.
-
-Positive examples consist of correct plot-review pairs. Negative examples are created by pairing the same review with an incorrect plot. Initially, random incorrect plots were too easy for the classifier to distinguish. To make the task more realistic, we added harder negatives, including wrong plots from the same decade and wrong plots from the same genre. This forces the classifier to learn more specific plot-review alignment rather than relying only on broad topical differences.
-
-We also included explicit overlap-based features such as token overlap, title mentions, length ratio, and n-gram copy rates. These features help the model identify whether a generated review is actually discussing the provided plot.
-
-\subsection{Evaluation Metrics}
-
-Generated reviews were evaluated using four metrics. The \textbf{style score} measures the probability that a review is classified as Ebert-like. The \textbf{plot relevance score} measures the probability that a review matches the correct movie plot. The \textbf{copy rate} measures the percentage of overlapping four-word sequences between the generated review and the Wikipedia plot summary. The \textbf{BERTScore F1} measures semantic similarity between generated reviews and held-out real Ebert reviews.
-
-Together, these metrics capture style imitation, factual grounding, originality, and semantic similarity. Using multiple metrics is important because no single score fully captures review quality. For example, a review can be highly relevant to the plot while still being mostly copied from the plot summary, or it can sound like Ebert while failing to discuss the correct film.
-
-\section{Experiments and Results}
-
-\subsection{Evaluation Model Performance}
-
-Before evaluating generated reviews, we first measured the performance of the automatic evaluation models.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{l c c c}
-\hline
-\textbf{Evaluator} & \textbf{Accuracy} & \textbf{F1} & \textbf{ROC-AUC} \\
-\hline
-Style Classifier & 0.992 & 0.992 & 1.000 \\
-Plot Relevance Classifier & 0.939 & 0.880 & 0.978 \\
-\hline
-\end{tabular}
-\caption{Performance of automatic evaluation models.}
-\label{tab:evaluators}
-\end{table}
-
-The style classifier achieved near-perfect performance, indicating that Roger Ebert's writing contains strong and identifiable textual patterns. This suggests that Ebert's style is distinguishable from reviews written by other critics. However, this result should be interpreted carefully. The classifier may learn not only deeper stylistic traits, but also era-specific language, publication-specific conventions, or vocabulary patterns associated with Ebert's review archive.
-
-The plot relevance classifier also performed well, achieving 0.939 accuracy and 0.978 ROC-AUC. The high ROC-AUC indicates that the classifier is especially effective at ranking correct plot-review pairs above incorrect pairs. This is useful for our evaluation setting because we care not only about binary classification, but also whether generated reviews are more aligned with the correct movie than with plausible alternatives.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{l c}
-\hline
-\textbf{Ranking Metric} & \textbf{Score} \\
-\hline
-Top-1 Ranking Accuracy & 0.962 \\
-Mean Reciprocal Rank & 0.979 \\
-Recall@3 & 0.996 \\
-\hline
-\end{tabular}
-\caption{Ranking performance of the plot relevance classifier.}
-\label{tab:ranking}
-\end{table}
-
-The ranking metrics further show that when the classifier was given one correct plot and several incorrect plots for a review, it ranked the correct plot first 96.2\% of the time. This suggests that the classifier can meaningfully identify plot-review alignment, especially after the addition of harder negative examples.
-
-\subsection{Generation Results}
-
-The results for the three generation approaches are shown in Table~\ref{tab:generation}.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{l c c c c}
-\hline
-\textbf{Model} & \textbf{Style} & \textbf{Plot} & \textbf{Copy} & \textbf{BERT} \\
-\hline
-Zero-Shot & 0.606 & 0.840 & 0.435 & 0.676 \\
-Few-Shot & 0.613 & 0.553 & 0.000 & 0.663 \\
-Fine-Tuned & 0.639 & 0.992 & 0.625 & 0.737 \\
-\hline
-\end{tabular}
-\caption{Generation results on held-out Ebert test examples. Higher is better for Style, Plot, and BERTScore. Lower is better for Copy Rate.}
-\label{tab:generation}
-\end{table}
-
-The fine-tuned FLAN-T5 model achieved the strongest overall performance across nearly all evaluation metrics. It obtained the highest style score, highest plot relevance score, and highest BERTScore. These improvements suggest that supervised fine-tuning on Ebert review and plot pairs allowed the model to learn patterns that were not captured through prompting alone.
-
-The zero-shot model performed reasonably well despite receiving no task-specific training. Its plot relevance score of 0.840 suggests that instruction-tuned language models already possess some ability to generate review-like text from plot descriptions. However, its style score and BERTScore were lower than those of the fine-tuned model, indicating that prompting alone was not sufficient to fully capture Ebert's review style.
-
-Unexpectedly, the few-shot baseline underperformed both the zero-shot and fine-tuned models on plot relevance and BERTScore. While it achieved a slightly higher style score than the zero-shot model, its plot relevance score dropped substantially. Qualitative inspection suggested that the model sometimes produced generic review-like text or became overly influenced by the few-shot examples instead of focusing on the target movie.
-
-\subsection{Analysis}
-
-The most important result is the relationship between plot relevance and copying behavior. Although the fine-tuned model achieved the highest plot relevance score, it also had the highest copy rate. The fine-tuned model copied 62.5\% of its four-word phrases from the Wikipedia plot summaries, compared to 43.5\% for the zero-shot baseline and 0.0\% for the few-shot baseline.
-
-This suggests that the fine-tuned model partially achieved stronger grounding by directly reusing source material rather than generating fully original critical analysis. In other words, the model learned to stay close to the plot, but sometimes too close. It behaved more like a plot summarizer than a critic in some cases.
-
-The BERTScore result is still encouraging. The fine-tuned model achieved a BERTScore F1 of 0.737, outperforming both the zero-shot and few-shot baselines. This indicates that the generated reviews were more semantically similar to held-out real Ebert reviews. However, BERTScore alone cannot determine whether the review is insightful, original, or stylistically faithful. It only measures semantic similarity to a reference review.
-
-The few-shot model's performance also highlights a practical limitation of small instruction-tuned models. Few-shot prompting is often useful for larger language models, but FLAN-T5-small may not have enough capacity or context length to effectively use multiple examples while also processing a full plot summary. This may explain why the few-shot model produced lower plot relevance despite being given more stylistic examples.
-
-\begin{figure}[h]
-\centering
-\fbox{\rule{0pt}{1.5in}\rule{0.9\linewidth}{0pt}}
-\caption{Style score by model. The fine-tuned FLAN-T5 model achieved the highest style score, suggesting that supervised training improved stylistic similarity to Roger Ebert. Replace this placeholder with your actual chart.}
-\label{fig:style}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\fbox{\rule{0pt}{1.5in}\rule{0.9\linewidth}{0pt}}
-\caption{Plot relevance and copy rate by model. The fine-tuned model achieved the highest plot relevance but also the highest copy rate, revealing a tradeoff between grounding and originality. Replace this placeholder with your actual chart.}
-\label{fig:plotcopy}
-\end{figure}
-
-\section{Discussion}
-
-\subsection{Key Findings}
-
-The primary finding of this project is that fine-tuning substantially improves both stylistic imitation and plot grounding. Compared to prompting-based approaches, the fine-tuned FLAN-T5 model generated reviews that were more similar to Roger Ebert's writing and more closely aligned with the target movie plots.
-
-However, these improvements came with an important tradeoff. The fine-tuned model frequently copied phrases and descriptions directly from the Wikipedia plot summaries. As a result, high plot relevance scores do not necessarily imply high-quality criticism. A model can be relevant to the movie while still failing to produce original critical prose.
-
-This observation highlights the importance of evaluating generated text using multiple metrics. If we had only measured plot relevance, the fine-tuned model would appear almost completely successful. However, the copy rate reveals that part of this success comes from extractive behavior. Similarly, if we had only measured style, we would not know whether the model was actually discussing the correct film.
-
-Another important lesson is that evaluation models depend heavily on the quality of their negative examples. The plot relevance classifier became more meaningful after we added harder negatives from similar genres and decades. Random wrong plots were too easy, while harder negatives forced the classifier to learn more realistic distinctions.
-
-\subsection{Limitations}
-
-Several limitations should be acknowledged. First, our evaluation relies heavily on automated metrics, which may not fully capture qualities such as insight, creativity, humor, or critical judgment. A review may receive a high style score while still lacking the depth or originality of a real Ebert review. Future work should include human evaluation, asking readers to rate generated reviews on style, relevance, originality, and overall quality.
-
-Second, BERTScore can only be computed for movies that Ebert actually reviewed. This limits its usefulness for the broader goal of generating reviews for movies Ebert never saw. For new movies, there is no reference Ebert review, so evaluation must rely on classifiers, human judgment, or other reference-free metrics.
-
-Third, the relatively small size of FLAN-T5-small likely constrained generation quality. Larger models may be better at preserving plot relevance while generating more original and stylistically convincing prose. They may also benefit more from few-shot prompting, which performed poorly in our experiments.
-
-Fourth, our model uses Wikipedia plot summaries as the main source of grounding information. These summaries are useful because they are structured and widely available, but they do not capture all aspects of a movie that a critic might care about, such as acting quality, cinematography, pacing, dialogue, or emotional impact. As a result, the model may lack important information that would shape a real review.
-
-\subsection{Ethical Considerations}
-
-This project also raises ethical questions around posthumous style imitation. Roger Ebert is no longer alive and cannot consent to new writing being generated in his voice. For this reason, generated outputs should be clearly labeled as Ebert-inspired rather than presented as authentic Ebert reviews.
-
-More broadly, author-style imitation can be misleading if readers believe generated text was actually written by the original person. This is especially important for influential critics, public intellectuals, or experts whose opinions carry cultural or professional weight. While our project is intended as a research exploration, any real deployment of this type of system would need clear disclosure and careful consideration of consent, attribution, and misuse.
-
-\section{Conclusion}
-
-This project explored whether language models can generate Roger Ebert-style movie reviews while remaining grounded in the plots of specific films. Using a dataset of Ebert reviews paired with Wikipedia plot summaries, we compared zero-shot prompting, few-shot prompting, and fine-tuning approaches.
-
-The fine-tuned FLAN-T5 model achieved the strongest overall results, outperforming prompting-based baselines on stylistic similarity, plot relevance, and semantic similarity. However, these gains were accompanied by increased copying from source plots, demonstrating a tradeoff between grounding and originality.
-
-Overall, our results suggest that aspects of an individual critic's writing style can be learned through supervised fine-tuning, but generating original and insightful criticism remains significantly more challenging than reproducing surface-level stylistic patterns. Future work should incorporate human evaluation, larger language models, richer movie features, and techniques designed to reduce extractive behavior while preserving plot relevance.
-
+\input{sec/0_abstract}
+\input{sec/1_intro}
+\input{sec/2_related_work}
+\input{sec/3_methods}
+\input{sec/4_experiments_results}
+\input{sec/5_discussion}
+\input{sec/6_conclusion}
 {
     \small
     \bibliographystyle{ieeenat_fullname}
-    \begin{thebibliography}{99}
-
-    \bibitem{t5}
-    Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J. Liu.
-    \textit{Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer}.
-    2020.
-
-    \bibitem{flan}
-    Jason Wei, Maarten Bosma, Vincent Zhao, Kelvin Guu, Adams Wei Yu, Brian Lester, Nan Du, Andrew M. Dai, and Quoc V. Le.
-    \textit{Finetuned Language Models Are Zero-Shot Learners}.
-    2021.
-
-    \bibitem{bertscore}
-    Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian Q. Weinberger, and Yoav Artzi.
-    \textit{BERTScore: Evaluating Text Generation with BERT}.
-    2019.
-
-    \bibitem{ratingprediction}
-    \textit{Rating Prediction via Generative Convolutional Neural Networks Based Regression}.
-    Pattern Recognition Letters.
-    URL: \url{https://www.sciencedirect.com/science/article/pii/S0167865518303325}
-
-    \bibitem{recsurvey}
-    \textit{Movie Recommender Systems: Concepts, Methods, Challenges, and Future Directions}.
-    URL: \url{https://pmc.ncbi.nlm.nih.gov/articles/PMC9269752/}
-
-    \bibitem{recperformance}
-    \textit{Movie Recommender Systems: Implementation and Performance Evaluation}.
-    URL: \url{https://arxiv.org/abs/1909.12749}
-
-    \bibitem{kaggle}
-    Kaggle.
-    \textit{Wikipedia Movie Plots Dataset}.
-    URL: \url{https://www.kaggle.com/datasets/jrobischon/wikipedia-movie-plots}
-
-    \bibitem{ebert}
-    RogerEbert.com.
-    \textit{Review Archive}.
-    URL: \url{https://www.rogerebert.com/reviews}
-
-    \end{thebibliography}
+    \bibliography{main}
 }
+
+% WARNING: do not forget to delete the supplementary pages from your submission
+% \input{sec/X_suppl}
 
 \end{document}

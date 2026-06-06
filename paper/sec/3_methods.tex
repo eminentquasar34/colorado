@@ -1,0 +1,90 @@
+\section{Methods}
+
+\subsection{Dataset Construction}
+
+We collected three primary datasets for this project: Roger Ebert reviews, non-Ebert movie reviews, and Wikipedia movie plot summaries. The Ebert review dataset contains 8,017 reviews scraped from RogerEbert.com~\cite{ebert}. Each review includes metadata such as title, author, publication date, rating, URL, and full review text. These reviews serve as the target style for generation and as positive examples for the style classifier.
+
+We also collected 8,330 reviews written by other critics. These reviews are used as negative examples for the style classifier. Including non-Ebert reviews allows the classifier to learn what distinguishes Ebert's writing from general film criticism rather than simply learning to identify movie review text.
+
+Finally, we used the Kaggle Wikipedia Movie Plots dataset, which contains approximately 34,000 movie plot summaries along with metadata such as movie title, release year, genre, director, and Wikipedia URL~\cite{kaggle}. These plot summaries provide the grounding information used by the generation model. The goal is for the model to generate a review that sounds like Ebert while referring to the correct movie.
+
+\subsubsection{Plot Matching}
+
+To create paired examples for generation, we matched Roger Ebert reviews to Wikipedia plot summaries using normalized movie titles and release years. Movies without reliable plot matches were excluded from the generator training dataset. This filtering step was important because noisy or incorrect matches would train the model to associate reviews with the wrong plots, weakening both generation and evaluation.
+
+After matching, the final plot-matched generator dataset contained 3,202 training examples, 510 validation examples, and 526 test examples.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l c}
+\hline
+\textbf{Split} & \textbf{Plot-Matched Examples} \\
+\hline
+Train & 3,202 \\
+Validation & 510 \\
+Test & 526 \\
+\hline
+\end{tabular}
+\caption{Final plot-matched dataset used for review generation.}
+\label{tab:data}
+\end{table}
+
+\subsubsection{Data Splits}
+
+To prevent data leakage between generation and evaluation models, we created fixed, non-overlapping splits. The generator training set was used only to fine-tune the language model. Separate Ebert reviews were reserved for the style classifier, validation, and final testing. This design ensures that the generator is evaluated on held-out movies and reviews that it did not train on.
+
+The held-out test set is especially important because it contains real Ebert reviews for movies that were not included in the generator's training data. This allows us to compare generated reviews against true Ebert reviews using BERTScore while still evaluating generalization to unseen examples.
+
+\subsection{Generation Models}
+
+We evaluated three approaches for generating movie reviews: zero-shot prompting, few-shot prompting, and supervised fine-tuning. All three approaches use FLAN-T5-small as the base model so that differences in performance are due to the training or prompting strategy rather than the underlying architecture.
+
+\subsubsection{Zero-Shot FLAN-T5}
+
+In the zero-shot setting, FLAN-T5-small was prompted with a movie title, release year, rating, and plot summary without any task-specific training. The prompt instructed the model to generate a Roger Ebert-style review. This baseline tests how well an instruction-tuned language model can perform the task using only its pretrained knowledge and the provided prompt.
+
+\subsubsection{Few-Shot FLAN-T5}
+
+In the few-shot setting, the prompt included several example Roger Ebert-style reviews before the target movie. These examples were selected from the training set and were intended to provide additional stylistic guidance. This baseline tests whether in-context examples help the model better imitate Ebert's tone and structure.
+
+Few-shot prompting is useful because it does not require gradient-based training. However, it also has limitations. FLAN-T5-small has limited context length and capacity, so adding examples may reduce the amount of space available for the target plot or may cause the model to imitate the examples too directly.
+
+\subsubsection{Fine-Tuned FLAN-T5}
+
+Our main model is a fine-tuned FLAN-T5-small encoder-decoder Transformer. Each training example is formatted as a text-to-text generation task. The input contains the movie title, year, Ebert rating, and Wikipedia plot summary. The target output is the real Roger Ebert review.
+
+The input format is:
+
+\begin{quote}
+Movie: [title] \\
+Year: [year] \\
+Roger Ebert rating: [rating] / 4 \\
+Wikipedia plot: [plot summary] \\
+Review:
+\end{quote}
+
+The target output is the corresponding Ebert review. The model is trained using teacher forcing and cross-entropy loss over the target review tokens. Through this training process, the model learns to map structured movie information and plot summaries to Ebert-style review text.
+
+\subsection{Evaluation Models}
+
+Because stylistic quality and plot relevance are difficult to measure directly, we trained two auxiliary evaluation models: a style classifier and a plot relevance classifier.
+
+\subsubsection{Style Classifier}
+
+The style classifier evaluates whether a review sounds like Roger Ebert. It uses TF-IDF unigram and bigram features with logistic regression. The input is only the review text, and the output is the probability that the review was written by Ebert.
+
+Positive examples are real Roger Ebert reviews, while negative examples are reviews by other critics. We intentionally avoid using metadata such as author name, URL, or publication date because generated reviews will not contain those fields. The classifier therefore learns from the textual content of the review itself.
+
+\subsubsection{Plot Relevance Classifier}
+
+The plot relevance classifier evaluates whether a review matches a given movie plot. The input is a pair consisting of a Wikipedia plot summary and a review. The output is the probability that the review corresponds to the plot.
+
+Positive examples consist of correct plot-review pairs. Negative examples are created by pairing the same review with an incorrect plot. Initially, random incorrect plots were too easy for the classifier to distinguish. To make the task more realistic, we added harder negatives, including wrong plots from the same decade and wrong plots from the same genre. This forces the classifier to learn more specific plot-review alignment rather than relying only on broad topical differences.
+
+We also included explicit overlap-based features such as token overlap, title mentions, length ratio, and n-gram copy rates. These features help the model identify whether a generated review is actually discussing the provided plot.
+
+\subsection{Evaluation Metrics}
+
+Generated reviews were evaluated using four metrics. The \textbf{style score} measures the probability that a review is classified as Ebert-like. The \textbf{plot relevance score} measures the probability that a review matches the correct movie plot. The \textbf{copy rate} measures the percentage of overlapping four-word sequences between the generated review and the Wikipedia plot summary. The \textbf{BERTScore F1} measures semantic similarity between generated reviews and held-out real Ebert reviews.
+
+Together, these metrics capture style imitation, factual grounding, originality, and semantic similarity. Using multiple metrics is important because no single score fully captures review quality. For example, a review can be highly relevant to the plot while still being mostly copied from the plot summary, or it can sound like Ebert while failing to discuss the correct film.
